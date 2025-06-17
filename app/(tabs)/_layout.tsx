@@ -1,8 +1,9 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
+// app/(tabs)/_layout.tsx
+import React from 'react'
+import { Tabs } from 'expo-router'
+import { MaterialIcons } from '@expo/vector-icons'
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -50,5 +51,5 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
-  );
+  )
 }

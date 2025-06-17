@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SorScreen() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
-    { from: 'ai', text: 'Merhaba! Size nasıl yardımcı olabilirim?' },
+    { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dileresiniz?' },
   ]);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +27,14 @@ export default function SorScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#fff' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.messages} contentContainerStyle={{ padding: 16 }}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Mümin AI</Text>
+          <Text style={styles.subtitle}>Mümine sor.</Text>
+        </View>
+      </View>
+      
+      <ScrollView style={styles.messages} contentContainerStyle={{ padding: 16, marginTop: 0 }}>
         {messages.map((msg, idx) => (
           <View key={idx} style={[styles.message, msg.from === 'user' ? styles.userMsg : styles.aiMsg]}>
             <Text style={{ color: msg.from === 'user' ? '#fff' : '#222' }}>{msg.text}</Text>
@@ -61,6 +68,24 @@ export default function SorScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginTop: 60,
+    textAlign: 'center',
+    justifyContent: 'flex-start',
+    borderRadius: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#111',
+  },
+  subtitle: {
+    fontSize: 20,
+    color: '#6b7280',
+  },
   messages: {
     flex: 1,
     backgroundColor: '#fff',
