@@ -1,35 +1,38 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
-const settings = [
-  {
-    icon: 'format-align-left' as const,
-    iconBg: '#e7fbe9',
-    iconColor: '#22c55e',
-    title: 'Yazı Tipi ve Boyutu',
-    subtitle: 'Okuma metnini özelleştirin',
-    onPress: () => {},
-  },
-  {
-    icon: 'nightlight-round' as const,
-    iconBg: '#e7fbe9',
-    iconColor: '#22c55e',
-    title: 'Görünüm',
-    subtitle: 'Açık veya Koyu Mod',
-    onPress: () => {},
-  },
-  {
-    icon: 'notifications-none' as const,
-    iconBg: '#e7fbe9',
-    iconColor: '#22c55e',
-    title: 'Bildirimler',
-    subtitle: 'Günün Suresi ve hatırlatmalar',
-    onPress: () => {},
-  },
-];
+import { useRouter } from 'expo-router';
 
 export default function AyarlarScreen() {
+  const router = useRouter();
+
+  const settings = [
+    {
+      icon: 'format-align-left' as const,
+      iconBg: '#e7fbe9',
+      iconColor: '#22c55e',
+      title: 'Yazı Tipi ve Boyutu',
+      subtitle: 'Okuma metnini özelleştirin',
+      onPress: () => router.push('/font_settings'),
+    },
+    {
+      icon: 'nightlight-round' as const,
+      iconBg: '#e7fbe9',
+      iconColor: '#22c55e',
+      title: 'Görünüm',
+      subtitle: 'Açık veya Koyu Mod',
+      onPress: () => router.push('/display_settings'),
+    },
+    {
+      icon: 'notifications-none' as const,
+      iconBg: '#e7fbe9',
+      iconColor: '#22c55e',
+      title: 'Bildirimler',
+      subtitle: 'Günün Suresi ve hatırlatmalar',
+      onPress: () => router.push('/notification_settings'),
+    },
+  ];
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Ayarlar</Text>
