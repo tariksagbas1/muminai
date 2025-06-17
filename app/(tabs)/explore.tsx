@@ -1,110 +1,104 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+export default function SorScreen() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([
+    { from: 'ai', text: 'Merhaba! Size nasıl yardımcı olabilirim?' },
+  ]);
+  const [loading, setLoading] = useState(false);
 
-export default function TabTwoScreen() {
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMessage = { from: 'user', text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+    // Simulate OpenAI API call
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { from: 'ai', text: 'Cevabım: Bu bir örnek yanıttır. (Kaynak: Diyanet İşleri Başkanlığı)' },
+      ]);
+      setLoading(false);
+    }, 1200);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#fff' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.messages} contentContainerStyle={{ padding: 16 }}>
+        {messages.map((msg, idx) => (
+          <View key={idx} style={[styles.message, msg.from === 'user' ? styles.userMsg : styles.aiMsg]}>
+            <Text style={{ color: msg.from === 'user' ? '#fff' : '#222' }}>{msg.text}</Text>
+          </View>
+        ))}
+        {loading && <Text style={{ color: '#888', marginTop: 8 }}>Yanıtlanıyor...</Text>}
+      </ScrollView>
+      <View style={styles.inputBar}>
+        <TextInput
+          style={[styles.input, { 
+            height: 'auto',
+            maxHeight: 120,
+            paddingTop: 8,
+            paddingBottom: 8,
+            minHeight: 40
+          }]}
+          placeholder="Sorunuzu yazın..."
+          value={input}
+          onChangeText={setInput}
+          editable={!loading}
+          multiline={true}
+          onSubmitEditing={handleSend}
+          returnKeyType="send"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+        <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={loading}>
+          <MaterialIcons name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  messages: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  titleContainer: {
+  message: {
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    maxWidth: '80%',
+  },
+  userMsg: {
+    backgroundColor: '#22c55e',
+    alignSelf: 'flex-end',
+  },
+  aiMsg: {
+    backgroundColor: '#f3f4f6',
+    alignSelf: 'flex-start',
+  },
+  inputBar: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    padding: 12,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginRight: 8,
+  },
+  sendBtn: {
+    backgroundColor: '#22c55e',
+    borderRadius: 10,
+    padding: 10,
   },
 });
