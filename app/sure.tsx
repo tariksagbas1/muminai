@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import MuminAIDropdown from './components/MuminAIDropdown';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '../firebase';
 
 export default function SureScreen() {
   const router = useRouter();
@@ -10,9 +12,11 @@ export default function SureScreen() {
 
   // fallback if no params
   const title = params.title || 'Mülk (1-5)';
-  const source = params.source || 'Elmalılı Hamdi Yazır';
   const author = params.author || 'Elmalılı Hamdi Yazır';
-  const content = params.content || `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır. İlk beş ayet, Allah'ın her şeye kadir olduğunu ve insanın bu dünyadaki imtihanının önemini vurgular. Ayetler: 1. Mülk elinde olan Allah yücedir. O, her şeye kadirdir. 2. Hanginizin daha güzel amel işleyeceğini sınamak için ölümü ve hayatı yarattı. 3. Yedi göğü tabaka tabaka yarattı. Rahman'ın yaratmasında bir düzensizlik göremezsin. 4. Gözünü çevir bak, bir bozukluk görebiliyor musun? 5. Andolsun, biz en yakın göğü kandillerle donattık...`;
+  const content = params.content || `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır...`;
+  const arabic = params.arabic || '';
+  const tefsir = params.tefsir || '';
+
 
   return (
     <View style={styles.container}>
@@ -32,9 +36,28 @@ export default function SureScreen() {
       {/* Main Content */}
       <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.source}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {source} | <Text style={{fontWeight:'bold'}}>Yazar:</Text> {author}</Text>
+        <Text style={styles.source}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {author}</Text>
         <View style={styles.divider} />
-        <Text style={styles.mainText}>{content}</Text>
+        {arabic ? (
+          <>
+            <Text style={styles.sectionTitle}>Arapça Metin</Text>
+            <View style={styles.sectionBox}>
+              <Text style={styles.arabicText}>{arabic}</Text>
+            </View>
+          </>
+        ) : null}
+        <Text style={styles.sectionTitle}>Türkçe Meal</Text>
+        <View style={styles.sectionBox}>
+          <Text style={styles.mainText}>{content}</Text>
+        </View>
+        {tefsir ? (
+          <>
+            <Text style={styles.sectionTitle}>Tefsir</Text>
+            <View style={styles.sectionBox}>
+              <Text style={styles.tefsirText}>{tefsir}</Text>
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -74,5 +97,34 @@ const styles = StyleSheet.create({
     color: '#222',
     lineHeight: 30,
     marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111',
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  sectionBox: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  arabicText: {
+    fontSize: 22,
+    color: '#111',
+    textAlign: 'right',
+    lineHeight: 38,
+  },
+  tefsirText: {
+    fontSize: 17,
+    color: '#228b22',
+    lineHeight: 26,
   },
 }); 

@@ -1,28 +1,101 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+
+const OPENAI_API_KEY = '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';
+
+// Conversation cache to persist messages while app is running
+let conversationCache: Array<{ from: 'user' | 'ai'; text: string }> = [
+  { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dileresiniz?' }
+];
+
+// Function to add message to cache and maintain max 20 messages
+const addToCache = (message: { from: 'user' | 'ai'; text: string }) => {
+  conversationCache.push(message);
+  // Keep only the last 20 messages
+  if (conversationCache.length > 20) {
+    conversationCache = conversationCache.slice(-20);
+  }
+};
+
+// Function to get cached messages
+const getCachedMessages = () => {
+  return [...conversationCache];
+};
 
 export default function SorScreen() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
-    { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dileresiniz?' },
-  ]);
+  const [messages, setMessages] = useState(getCachedMessages());
   const [loading, setLoading] = useState(false);
+
+  // Load cached messages when component mounts
+  useEffect(() => {
+    setMessages(getCachedMessages());
+  }, []);
+
+  const generateResponse = async (userInput: string) => {
+    try {
+      const systemPrompt = "You are an Islamic Q&A assistant named Mümin, for Turkish Seniors. You should be acting as if you are wise knowledgable person fully committed to and supporting to Islam. You are a strong supporter of Islam. You are not to talk about anything that is Haram. Always be respectful and formal. Always answer in Turkish.";
+      
+      // Build conversation history from the last few messages
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.from === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory,
+            { role: 'user', content: userInput }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || 'Üzgünüm, bir cevap oluşturulamadı.';
+    } catch (error) {
+      console.error('OpenAI Error:', error);
+      throw new Error('Yanıt alınırken bir hata oluştu.');
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    const userMessage = { from: 'user', text: input };
+    
+    const userMessage = { from: 'user' as const, text: input };
     setMessages((prev) => [...prev, userMessage]);
+    addToCache(userMessage); // Add to cache
     setInput('');
     setLoading(true);
-    // Simulate OpenAI API call
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { from: 'ai', text: 'Cevabım: Bu bir örnek yanıttır. (Kaynak: Diyanet İşleri Başkanlığı)' },
-      ]);
+
+    try {
+      const response = await generateResponse(input);
+      const aiMessage = { from: 'ai' as const, text: response };
+      setMessages((prev) => [...prev, aiMessage]);
+      addToCache(aiMessage); // Add to cache
+    } catch (error) {
+      Alert.alert(
+        'Hata',
+        'Yanıt alınırken bir hata oluştu. Lütfen tekrar deneyin.',
+        [{ text: 'Tamam' }]
+      );
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (

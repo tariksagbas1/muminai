@@ -3,25 +3,30 @@ import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const HIKAYE = {
-  title: 'Hüsnü Zan ve İyi Düşünmenin Önemi',
-  source: "İmam Gazali, İhyâ-u Ulûmi'd-Dîn",
-  author: 'İmam Gazali',
-  content: `Bir gün, bir grup insan bir araya gelerek birbirleri hakkında konuşmaya başladılar. İçlerinden biri, diğerlerinin kötü niyetli olduğunu ve her zaman olumsuz düşündüklerini söyledi. Ancak, bu sırada yaşlı bir bilge aralarına katıldı. Bilge, onlara şöyle dedi: 'Ey gençler! İnsanlar hakkında duyduğunuz her şeyde, mevcut iyi niyetleri görebilmeyi öğrenin. Eğer birinin kalbinde kötü bir niyet ararsanız, onu bulursunuz; ama eğer iyi bir niyet peşindeyseniz, o da sizi bulur.' Bu sözler üzerine grup, birbirlerine karşı olan önyargılarını sorgulamaya başladılar. Her biri, diğerlerini daha iyi anlamaya ve iyi düşünmeye gayret etti.`,
-};
-
-const SURE = {
-  title: 'Mülk (1-5)',
-  source: 'Elmalılı Hamdi Yazır',
-  author: 'Elmalılı Hamdi Yazır',
-  content: `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır. İlk beş ayet, Allah'ın her şeye kadir olduğunu ve insanın bu dünyadaki imtihanının önemini vurgular. Ayetler: 1. Mülk elinde olan Allah yücedir. O, her şeye kadirdir. 2. Hanginizin daha güzel amel işleyeceğini sınamak için ölümü ve hayatı yarattı. 3. Yedi göğü tabaka tabaka yarattı. Rahman'ın yaratmasında bir düzensizlik göremezsin. 4. Gözünü çevir bak, bir bozukluk görebiliyor musun? 5. Andolsun, biz en yakın göğü kandillerle donattık...`,
-};
 
 async function loadUserSuras(user_id: number) {
   const PROJECT_REF = process.env.EXPO_PUBLIC_SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_REF;
   const ANON_KEY = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) as string;
   const res = await fetch(
     `https://${PROJECT_REF}.functions.supabase.co/return-sures`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ANON_KEY}`,
+        'apikey': ANON_KEY,
+      } as Record<string, string>,
+      body: JSON.stringify({ user_id }),
+    }
+  );
+  if (!res.ok) throw new Error(`Error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+async function loadUserDailyContent(user_id: number) {
+  const PROJECT_REF = process.env.EXPO_PUBLIC_SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_REF;
+  const ANON_KEY = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) as string;
+  const res = await fetch(
+    `https://${PROJECT_REF}.functions.supabase.co/return-daily-content`,
     {
       method: 'POST',
       headers: {
@@ -42,6 +47,10 @@ export default function OkuScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [dailyContent, setDailyContent] = useState<any>(null);
+  const [dailyLoading, setDailyLoading] = useState<boolean>(false);
+  const [dailyError, setDailyError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchSures = async () => {
       setLoading(true);
@@ -57,6 +66,43 @@ export default function OkuScreen() {
     };
     fetchSures();
   }, []);
+
+  useEffect(() => {
+    const fetchDailyContent = async () => {
+      setDailyLoading(true);
+      setDailyError(null);
+      try {
+        const data = await loadUserDailyContent(1);
+        setDailyContent(data);
+      } catch (err: any) {
+        setDailyError(err.message || 'Bağlantı hatası');
+      } finally {
+        setDailyLoading(false);
+      }
+    };
+    fetchDailyContent();
+  }, []);
+
+  // Dynamic HIKAYE based on dailyContent
+  const HIKAYE = {
+    title: dailyContent?.story_title || 'Yükleniyor...',
+    source: dailyContent?.story_source || 'Yükleniyor...',
+    author: dailyContent?.story_author || 'Yükleniyor...',
+    content: dailyContent?.story || 'Yükleniyor...',
+  };
+
+  // Dynamic SURE based on dailyContent
+  const SURE = {
+    title: dailyContent ? (dailyContent.sure_index ? `${dailyContent.sure_title} (${dailyContent.sure_index})` : dailyContent.sure_title) : 'Yükleniyor...',
+    author: dailyContent?.sure_tefsir_author || 'Yükleniyor...',
+    content: dailyContent?.sure_meal || 'Yükleniyor...',
+    arabic: dailyContent?.sure_arabic || '',
+    tefsir: dailyContent?.sure_tefsir || '',
+  };
+  const FACT = {
+    title: dailyContent?.fun_fact_title || 'Yükleniyor...',
+    content: dailyContent?.fun_fact || 'Yükleniyor...',
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -75,7 +121,7 @@ export default function OkuScreen() {
         </View>
         <Text style={styles.cardTitle}>{HIKAYE.title}</Text>
         <Text style={styles.cardContent}>
-          Bu hikaye, insanların birbirlerine hüsnü zan ile yaklaşmalarının önemini ve iyi düşünmenin...
+        {HIKAYE.content.substring(0, 100)}...
         </Text>
         <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {HIKAYE.source}</Text>
         <Text style={styles.cardLink}>Devamını okumak için tıklayın...</Text>
@@ -88,9 +134,9 @@ export default function OkuScreen() {
         </View>
         <Text style={styles.cardTitle}>{SURE.title}</Text>
         <Text style={styles.cardContent}>
-          Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve...
+          {SURE.content.substring(0, 100)}...
         </Text>
-        <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {SURE.source}</Text>
+        <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {SURE.author}</Text>
         <Text style={styles.cardLink}>Arapça metni ve tefsiri okumak için tıklayın...</Text>
       </TouchableOpacity>
       {/* Günün Bilgisi Card */}
@@ -99,11 +145,10 @@ export default function OkuScreen() {
           <MaterialIcons name="emoji-objects" size={28} color="#16a34a" />
           <Text style={styles.cardHeaderText}>Günün Bilgisi</Text>
         </View>
-        <Text style={styles.cardTitle}>Kuran-ı Kerim'de Su Arasında Geçen Sureler</Text>
+        <Text style={styles.cardTitle}>{FACT.title}</Text>
         <Text style={styles.cardContent}>
-          Kuran-ı Kerim'de iki sure, suyla ismi anılan 'el-Mü'minun' ve 'el-Anfal' sureleridir. el-Mü'minun Suresi, insanın yaratılışında suyun önemine vurgu yapar.
+          {FACT.content}
         </Text>
-        <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>İlgili Sureler:</Text> el-Mü'minun, el-Anfal</Text>
       </View>
       {/* Günün Sureleri Section */}
       <Text style={styles.sureSectionTitle}>Günün Sureleri</Text>
