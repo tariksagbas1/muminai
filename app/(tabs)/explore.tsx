@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '';
 
 // User-specific conversation cache
 const userConversationCache: { [userId: string]: Array<{ from: 'user' | 'ai'; text: string }> } = {};
