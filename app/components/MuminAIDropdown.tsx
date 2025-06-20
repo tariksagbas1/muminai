@@ -7,7 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DROPDOWN_MAX_HEIGHT = SCREEN_HEIGHT * 0.3;
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '';
 
 
 export default function MuminAIDropdown({
