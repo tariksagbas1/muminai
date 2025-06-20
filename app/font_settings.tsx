@@ -1,31 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { updateFontSize, getFontSize } from '../utils/anonUserSupabase';
+import { useTheme } from '../hooks/useTheme';
 
 const fontSizes = [
-  { label: 'Küçük', size: 14 },
-  { label: 'Normal', size: 18 },
-  { label: 'Büyük', size: 22 },
-  { label: 'Çok Büyük', size: 26 },
+  { label: 'Küçük', size: 16 },
+  { label: 'Normal', size: 20 },
+  { label: 'Büyük', size: 24 },
+  { label: 'Çok Büyük', size: 28 },
 ];
 
 export default function FontSettingsScreen() {
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState(16);
+  const [selectedSize, setSelectedSize] = useState(18);
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    loadSavedFontSize();
+  }, []);
+
+  const loadSavedFontSize = async () => {
+    try {
+      const savedSize = await getFontSize();
+      setSelectedSize(savedSize);
+    } catch (error) {
+      console.error('Error loading saved font size:', error);
+    }
+  };
+
+  const handleFontSizeChange = async (size: number) => {
+    try {
+      const result = await updateFontSize(size);
+      if (result === 0) {
+        setSelectedSize(size);
+      } else {
+        console.error('Font size update failed');
+      }
+    } catch (error) {
+      console.error('Error updating font size:', error);
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.push('/ayarlar')} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#222" />
+          <MaterialIcons name="arrow-back" size={24} color={colors.primaryText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yazı Tipi ve Boyutu</Text>
+        <Text style={[styles.headerTitle, { color: colors.primaryText }]}>Yazı Tipi ve Boyutu</Text>
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={styles.subtitle}>Okuma deneyiminizi iyileştirmek için yazı boyutunu ayarlayın.</Text>
+        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Okuma deneyiminizi iyileştirmek için yazı boyutunu ayarlayın.</Text>
         
         <View style={styles.optionsContainer}>
           {fontSizes.map((font) => (
@@ -33,28 +62,29 @@ export default function FontSettingsScreen() {
               key={font.size}
               style={[
                 styles.option,
-                selectedSize === font.size && styles.selectedOption,
+                { backgroundColor: colors.surface },
+                selectedSize === font.size && { backgroundColor: colors.primary + '20' },
               ]}
-              onPress={() => setSelectedSize(font.size)}
+              onPress={() => handleFontSizeChange(font.size)}
             >
               <Text style={[
                 styles.optionText,
-                { fontSize: font.size },
-                selectedSize === font.size && styles.selectedText
+                { fontSize: font.size, color: colors.primaryText },
+                selectedSize === font.size && { color: colors.primary, fontWeight: 'bold' }
               ]}>
                 {font.label}
               </Text>
               {selectedSize === font.size && (
-                <MaterialIcons name="check" size={24} color="#22c55e" />
+                <MaterialIcons name="check" size={24} color={colors.primary} />
               )}
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.previewContainer}>
-          <Text style={styles.previewTitle}>Önizleme</Text>
-          <View style={styles.previewBox}>
-            <Text style={[styles.previewText, { fontSize: selectedSize }]}>
+          <Text style={[styles.previewTitle, { color: colors.primaryText }]}>Önizleme</Text>
+          <View style={[styles.previewBox, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.previewText, { fontSize: selectedSize, color: colors.primaryText }]}>
               Mümin Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır.
             </Text>
           </View>
@@ -136,6 +166,6 @@ const styles = StyleSheet.create({
   },
   previewText: {
     color: '#333',
-    lineHeight: 24,
+    lineHeight: 28,
   },
 }); 

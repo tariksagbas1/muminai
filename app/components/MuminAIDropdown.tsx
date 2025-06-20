@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Dimensions, Alert, ScrollView, BackHandler } from 'react-native';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
 import SparkleIcon from './SparkleIcon';
+import { useTheme } from '../../hooks/useTheme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DROPDOWN_MAX_HEIGHT = SCREEN_HEIGHT * 0.3;
+
+const OPENAI_API_KEY = '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';
+
 
 export default function MuminAIDropdown({
   headerText = 'Mümin AI',
@@ -13,7 +17,8 @@ export default function MuminAIDropdown({
   inputPlaceholder = 'Sorunuzu yazın...',
   onBack,
   onShare,
-  children
+  children,
+  contextData
 }: {
   headerText?: string;
   prompt?: string;
@@ -22,11 +27,25 @@ export default function MuminAIDropdown({
   onBack?: () => void;
   onShare?: () => void;
   children?: React.ReactNode;
+  contextData?: {
+    sure_title?: string;
+    sure_meal?: string;
+    sure_tefsir?: string;
+    sure_tefsir_author?: string;
+    story_title?: string;
+    story_source?: string;
+    story?: string;
+    [key: string]: any;
+  };
 }) {
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false); // closed by default
   const [input, setInput] = useState('');
   const [inputHeight, setInputHeight] = useState(40);
+  const [messages, setMessages] = useState<Array<{ from: 'user' | 'ai'; text: string }>>([]);
+  const [loading, setLoading] = useState(false);
   const animatedHeight = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -36,27 +55,131 @@ export default function MuminAIDropdown({
     }).start();
   }, [open]);
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0 && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  // Auto-scroll when loading state changes
+  useEffect(() => {
+    if (loading && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [loading]);
+
+  const generateResponse = async (userInput: string) => {
+    try {
+      let systemPrompt = "You are an Islamic Q&A assistant named Mümin, for Turkish Seniors. You should be acting as if you are a wise knowledgable person fully committed to Islam. You are a strong supporter of Islam. You are not to talk about anything that is Haram. Always be respectful and formal. Always answer in Turkish.";
+      
+      // Add context data to system prompt if available
+      if (contextData) {
+        let contextInfo = "";
+        
+        // For sure pages
+        if (contextData.sure_title && contextData.sure_meal && contextData.sure_tefsir) {
+          contextInfo += `\n\nBu konuşma ${contextData.sure_title} Suresi hakkındadır. `;
+          contextInfo += `\n\nSurenin Türkçe meali:\n${contextData.sure_meal}`;
+          contextInfo += `\n\nSurenin tefsiri:\n${contextData.sure_tefsir}, Tefsirin Yapan Kişi: ${contextData.sure_tefsir_author}`;
+        }
+        
+        // For story pages
+        if (contextData.story_title && contextData.story_source && contextData.story) {
+          contextInfo += `\n\nBu konuşma "${contextData.story_title}" hakkındadır. `;
+          contextInfo += `\n\nKaynak: ${contextData.story_source}`;
+          contextInfo += `\n\nİçerik:\n${contextData.story}`;
+        }
+        
+        if (contextInfo) {
+          systemPrompt += contextInfo;
+        }
+      }
+      
+      // Build conversation history from the last few messages
+      const conversationHistory = messages.slice(-3).map(msg => ({
+        role: msg.from === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }));
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory,
+            { role: 'user', content: userInput }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || 'Üzgünüm, bir cevap oluşturulamadı.';
+    } catch (error) {
+      console.error('OpenAI Error:', error);
+      throw new Error('Yanıt alınırken bir hata oluştu.');
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    
+    const userMessage = { from: 'user' as const, text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await generateResponse(input);
+      const aiMessage = { from: 'ai' as const, text: response };
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      Alert.alert(
+        'Hata',
+        'Yanıt alınırken bir hata oluştu. Lütfen tekrar deneyin.',
+        [{ text: 'Tamam' }]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: colors.background }]}>
       {/* Header Row */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { backgroundColor: colors.background_accent }]}>
         <TouchableOpacity onPress={onBack} style={styles.iconBtn}>
-          <MaterialIcons name="arrow-back" size={22} color="#222" />
+          <MaterialIcons name="arrow-back" size={22} color={colors.button_color} />
         </TouchableOpacity>
         <View style={styles.sparkleRow}>
-          <SparkleIcon size={18} color="#16a34a" style={{ marginRight: 2, marginTop: 1 }} />
-          <Text style={styles.headerText}>{headerText}</Text>
-          <SparkleIcon size={18} color="#16a34a" style={{ marginLeft: 2, marginTop: 1 }} />
+          <SparkleIcon size={18} color={colors.accentText} style={{ marginRight: 6, marginTop: 1 }} />
+          <Text style={[styles.headerText, {color: colors.accentText}]}>{headerText}</Text>
+          <SparkleIcon size={18} color={colors.accentText} style={{ marginLeft: 6, marginTop: 1 }} />
         </View>
         <TouchableOpacity onPress={onShare} style={styles.iconBtn}>
-          <Feather name="share-2" size={18} color="#222" />
+          <Feather name="share-2" size={18} color={colors.button_color}/>
         </TouchableOpacity>
       </View>
-      <Text style={styles.prompt}>{prompt}</Text>
+      <Text style={[styles.prompt, { backgroundColor: colors.background_accent }]}>{prompt}</Text>
       {/* Arrow Button */}
-      <View style={styles.arrowRow} pointerEvents="box-none">
+      <View style={[styles.arrowRow, { backgroundColor: colors.background_accent }]} pointerEvents="box-none">
         <TouchableOpacity style={styles.arrowBtn} onPress={() => setOpen((v) => !v)}>
-          <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={18} color="#222" />
+          <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={18} color={colors.button_color2} />
         </TouchableOpacity>
       </View>
       {/* Dropdown wrapper adds margin only when open */}
@@ -68,13 +191,39 @@ export default function MuminAIDropdown({
               height: animatedHeight,
               opacity: animatedHeight.interpolate({ inputRange: [0, 40], outputRange: [0, 1], extrapolate: 'clamp' }),
               marginBottom: open ? 16 : 0,
+              backgroundColor: colors.background_accent_2,
+              marginTop: 10,
             },
           ]}
           pointerEvents={open ? 'auto' : 'none'}
         >
           <View style={{ flex: 1, width: '100%', justifyContent: 'flex-start', flexDirection: 'column' }}>
             <View style={{ flex: 1 }}>
-              <View style={styles.bubble}><Text style={styles.bubbleText}>{bubble}</Text></View>
+              {messages.length === 0 ? (
+                <View style={styles.bubble}>
+                  <Text style={styles.bubbleText}>{bubble}</Text>
+                </View>
+              ) : (
+                <ScrollView 
+                  ref={scrollViewRef}
+                  style={styles.messagesContainer} 
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.messagesContentContainer}
+                >
+                  {messages.map((msg, idx) => (
+                    <View key={idx} style={[styles.message, msg.from === 'user' ? styles.userMsg : styles.aiMsg]}>
+                      <Text style={[styles.messageText, msg.from === 'user' ? styles.userMsgText : styles.aiMsgText]}>
+                        {msg.text}
+                      </Text>
+                    </View>
+                  ))}
+                  {loading && (
+                    <View style={styles.loadingContainer}>
+                      <Text style={styles.loadingText}>Yanıtlanıyor...</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
             </View>
             <View style={styles.inputRowWrapper}>
               <View style={styles.inputRow}>
@@ -90,12 +239,19 @@ export default function MuminAIDropdown({
                   value={input}
                   onChangeText={setInput}
                   multiline={true}
+                  editable={!loading}
+                  onSubmitEditing={handleSend}
+                  returnKeyType="send"
                 />
-                <TouchableOpacity style={styles.sendBtn}>
+                <TouchableOpacity 
+                  style={[styles.sendBtn, loading && styles.sendBtnDisabled, { backgroundColor: colors.primary }]} 
+                  onPress={handleSend}
+                  disabled={loading}
+                >
                   <MaterialIcons name="send" size={18} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.micBtn}>
-                  <MaterialIcons name="mic" size={18} color="#16a34a" />
+                  <MaterialIcons name="mic" size={18} color={colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -110,7 +266,6 @@ export default function MuminAIDropdown({
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#f3fbf6',
     alignItems: 'center',
     paddingBottom: 0,
     marginBottom: 12,
@@ -149,7 +304,6 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#16a34a',
     textAlign: 'center',
     marginBottom: 0,
     marginTop: 0,
@@ -163,6 +317,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     width: '100%',
     paddingHorizontal: 0,
+    zIndex: 100,
   },
   arrowRow: {
     width: '100%',
@@ -215,6 +370,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'left',
   },
+  messagesContainer: {
+    flex: 1,
+    marginBottom: 10,
+  },
+  messagesContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
+  message: {
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    maxWidth: '80%',
+  },
+  userMsg: {
+    backgroundColor: '#22c55e',
+    alignSelf: 'flex-end',
+  },
+  aiMsg: {
+    backgroundColor: '#f3f4f6',
+    alignSelf: 'flex-start',
+  },
+  messageText: {
+    fontSize: 14,
+  },
+  userMsgText: {
+    color: '#fff',
+  },
+  aiMsgText: {
+    color: '#222',
+  },
+  loadingContainer: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#888',
+    fontSize: 14,
+  },
   inputRowWrapper: {
     width: '100%',
     justifyContent: 'flex-end',
@@ -251,6 +445,9 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#ccc',
   },
   micBtn: {
     backgroundColor: '#fff',

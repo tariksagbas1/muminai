@@ -1,60 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { updateNotifications, getNotifications } from '../utils/anonUserSupabase';
+import { useTheme } from '../hooks/useTheme';
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   const [sureBildirim, setSureBildirim] = useState(false);
   const [okumaBildirim, setOkumaBildirim] = useState(false);
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    loadSavedNotifications();
+  }, []);
+
+  const loadSavedNotifications = async () => {
+    try {
+      const notifications = await getNotifications();
+      setSureBildirim(notifications.sureNotif);
+      setOkumaBildirim(notifications.readingNotif);
+    } catch (error) {
+      console.error('Error loading saved notifications:', error);
+    }
+  };
+
+  const handleSureBildirimChange = async (value: boolean) => {
+    try {
+      const result = await updateNotifications(value, okumaBildirim);
+      if (result === 0) {
+        setSureBildirim(value);
+      } else {
+        console.error('Sure notification update failed');
+      }
+    } catch (error) {
+      console.error('Error updating sure notification:', error);
+    }
+  };
+
+  const handleOkumaBildirimChange = async (value: boolean) => {
+    try {
+      const result = await updateNotifications(sureBildirim, value);
+      if (result === 0) {
+        setOkumaBildirim(value);
+      } else {
+        console.error('Reading notification update failed');
+      }
+    } catch (error) {
+      console.error('Error updating reading notification:', error);
+    }
+  };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.push('/ayarlar')} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#222" />
+          <MaterialIcons name="arrow-back" size={24} color={colors.primaryText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bildirimler</Text>
+        <Text style={[styles.headerTitle, { color: colors.primaryText }]}>Bildirimler</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
           Günlük hatırlatmaları özelleştirin.
         </Text>
 
         {/* Switches */}
-        <View style={styles.settingsContainer}>
+        <View style={[styles.settingsContainer, { backgroundColor: colors.card }]}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Günün Sureleri</Text>
-              <Text style={styles.settingDescription}>Her gün yeni 3 sure için bildirim alın</Text>
+              <Text style={[styles.settingTitle, { color: colors.primaryText }]}>Günün Sureleri</Text>
+              <Text style={[styles.settingDescription, { color: colors.secondaryText }]}>Her gün yeni 3 sure için bildirim alın</Text>
             </View>
             <Switch
               value={sureBildirim}
-              onValueChange={setSureBildirim}
-              trackColor={{ false: '#e5e5ea', true: '#34c759' }}
-              ios_backgroundColor="#e5e5ea"
+              onValueChange={handleSureBildirimChange}
+              trackColor={{ false: colors.disabled, true: colors.success }}
+              ios_backgroundColor={colors.disabled}
             />
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Günün Okumaları</Text>
-              <Text style={styles.settingDescription}>Günün okumaları için hatırlatma alın</Text>
+              <Text style={[styles.settingTitle, { color: colors.primaryText }]}>Günün Okumaları</Text>
+              <Text style={[styles.settingDescription, { color: colors.secondaryText }]}>Günün okumaları için hatırlatma alın</Text>
             </View>
             <Switch
               value={okumaBildirim}
-              onValueChange={setOkumaBildirim}
-              trackColor={{ false: '#e5e5ea', true: '#34c759' }}
-              ios_backgroundColor="#e5e5ea"
+              onValueChange={handleOkumaBildirimChange}
+              trackColor={{ false: colors.disabled, true: colors.success }}
+              ios_backgroundColor={colors.disabled}
             />
           </View>
         </View>
 
-        <Text style={styles.note}>
+        <Text style={[styles.note, { color: colors.secondaryText }]}>
           Not: Bildirimleri kapatmak için telefonunuzun ayarlarından da değişiklik yapmanız gerekebilir.
         </Text>
       </View>

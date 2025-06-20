@@ -4,24 +4,26 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import MuminAIDropdown from './components/MuminAIDropdown';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '../firebase';
+import { useFontSize } from '../hooks/useFontSize';
+import { useTheme } from '../hooks/useTheme';
 
 export default function SureScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { fontSize } = useFontSize();
+  const { colors } = useTheme();
 
   // fallback if no params
-  const title = params.title || 'Mülk (1-5)';
-  const author = params.author || 'Elmalılı Hamdi Yazır';
-  const content = params.content || `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır...`;
-  const arabic = params.arabic || '';
-  const tefsir = params.tefsir || '';
-
+  const title = (params.title as string) || 'Mülk (1-5)';
+  const author = (params.author as string) || 'Elmalılı Hamdi Yazır';
+  const content = (params.content as string) || `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır...`;
+  const arabic = (params.arabic as string) || '';
+  const tefsir = (params.tefsir as string) || '';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.header }]}>
         
       </View>
       {/* Mümin AI Dropdown */}
@@ -32,29 +34,35 @@ export default function SureScreen() {
         inputPlaceholder="Sorunuzu yazın..."
         onBack={() => router.back()}
         onShare={() => {}}
+        contextData={{
+          sure_title: title as string,
+          sure_meal: content as string,
+          sure_tefsir: tefsir as string,
+          sure_tefsir_author: author as string
+        }}
       />
       {/* Main Content */}
       <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.source}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {author}</Text>
-        <View style={styles.divider} />
+        <Text style={[styles.title, { color: colors.primaryText }]}>{title}</Text>
+        <Text style={[styles.source, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {author}</Text>
+        <View style={[styles.divider, { backgroundColor: colors.divider }]} />
         {arabic ? (
           <>
-            <Text style={styles.sectionTitle}>Arapça Metin</Text>
-            <View style={styles.sectionBox}>
-              <Text style={styles.arabicText}>{arabic}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Arapça Metin</Text>
+            <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+              <Text style={[styles.arabicText, { fontSize: fontSize + 2, color: colors.arabicText }]}>{arabic}</Text>
             </View>
           </>
         ) : null}
-        <Text style={styles.sectionTitle}>Türkçe Meal</Text>
-        <View style={styles.sectionBox}>
-          <Text style={styles.mainText}>{content}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Türkçe Meal</Text>
+        <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+          <Text style={[styles.mainText, { fontSize: fontSize, color: colors.mealText }]}>{content}</Text>
         </View>
         {tefsir ? (
           <>
-            <Text style={styles.sectionTitle}>Tefsir</Text>
-            <View style={styles.sectionBox}>
-              <Text style={styles.tefsirText}>{tefsir}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Tefsir</Text>
+            <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+              <Text style={[styles.tefsirText, { fontSize: fontSize, color: colors.tefsirText }]}>{tefsir}</Text>
             </View>
           </>
         ) : null}

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert, Button } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
+import { getOrCreateAnonUserId } from '../../utils/anonUserSupabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../hooks/useTheme';
 
 async function loadUserSuras(user_id: number) {
   const PROJECT_REF = process.env.EXPO_PUBLIC_SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_REF;
@@ -43,6 +45,10 @@ async function loadUserDailyContent(user_id: number) {
 
 export default function OkuScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+
+  const [user_id, setUserId] = useState<number | null>(null);
+
   const [sures, setSures] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,12 +57,27 @@ export default function OkuScreen() {
   const [dailyLoading, setDailyLoading] = useState<boolean>(false);
   const [dailyError, setDailyError] = useState<string | null>(null);
 
+  const clearUser = async () => {
+    await AsyncStorage.removeItem('anonUserId');
+    console.log('User ID cleared');
+  };
+
+  //Load user_id
   useEffect(() => {
+    (async () => {
+      const id = await getOrCreateAnonUserId();
+      setUserId(Number(id));
+    })();
+  }, []);
+
+  // Load sures
+  useEffect(() => {
+    if (!user_id) return;
     const fetchSures = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await loadUserSuras(1);
+        const data = await loadUserSuras(user_id);
         setSures(data);
       } catch (e: any) {
         setError(e.message || 'Bağlantı hatası');
@@ -65,14 +86,15 @@ export default function OkuScreen() {
       }
     };
     fetchSures();
-  }, []);
-
+  }, [user_id]);
+  // Load daily content
   useEffect(() => {
     const fetchDailyContent = async () => {
+      if (!user_id) return;
       setDailyLoading(true);
       setDailyError(null);
       try {
-        const data = await loadUserDailyContent(1);
+        const data = await loadUserDailyContent(user_id);
         setDailyContent(data);
       } catch (err: any) {
         setDailyError(err.message || 'Bağlantı hatası');
@@ -81,7 +103,7 @@ export default function OkuScreen() {
       }
     };
     fetchDailyContent();
-  }, []);
+  }, [user_id]);
 
   // Dynamic HIKAYE based on dailyContent
   const HIKAYE = {
@@ -105,71 +127,72 @@ export default function OkuScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.header }]}>
         <View>
-          <Text style={styles.title}>Mümin AI</Text>
-          <Text style={styles.subtitle}>Bugünün okumalarını yaptın mı?</Text>
+          <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
+          <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Bugünün okumalarını yaptın mı?</Text>
+          <Button title="Clear User ID" onPress={clearUser} />
         </View>
       </View>
-      <Text style={styles.sectionTitle}>Bugünün Okumaları</Text>
+      <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Bugünün Okumaları</Text>
       {/* Günün Hikayesi Card */}
-      <TouchableOpacity style={styles.card} onPress={() => router.push({ pathname: '/hikaye', params: HIKAYE })}>
+      <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]} onPress={() => router.push({ pathname: '/hikaye', params: HIKAYE })}>
         <View style={styles.cardHeader}>
-          <MaterialIcons name="menu-book" size={28} color="#16a34a" />
-          <Text style={styles.cardHeaderText}>Günün Hikayesi</Text>
+          <MaterialIcons name="menu-book" size={28} color={colors.primary} />
+          <Text style={[styles.cardHeaderText, { color: colors.primaryText }]}>Günün Hikayesi</Text>
         </View>
-        <Text style={styles.cardTitle}>{HIKAYE.title}</Text>
-        <Text style={styles.cardContent}>
+        <Text style={[styles.cardTitle, { color: colors.primaryText }]}>{HIKAYE.title}</Text>
+        <Text style={[styles.cardContent, { color: colors.secondaryText }]}>
         {HIKAYE.content.substring(0, 100)}...
         </Text>
-        <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {HIKAYE.source}</Text>
-        <Text style={styles.cardLink}>Devamını okumak için tıklayın...</Text>
+        <Text style={[styles.cardSource, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {HIKAYE.source}</Text>
+        <Text style={[styles.cardLink, { color: colors.accentText }]}>Devamını okumak için tıklayın...</Text>
       </TouchableOpacity>
       {/* Günün Suresi Card */}
-      <TouchableOpacity style={styles.card} onPress={() => router.push({ pathname: '/sure', params: SURE })}>
+      <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]} onPress={() => router.push({ pathname: '/sure', params: SURE })}>
         <View style={styles.cardHeader}>
-          <MaterialIcons name="auto-awesome" size={28} color="#16a34a" />
-          <Text style={styles.cardHeaderText}>Günün Suresi</Text>
+          <MaterialIcons name="auto-awesome" size={28} color={colors.primary} />
+          <Text style={[styles.cardHeaderText, { color: colors.primaryText }]}>Günün Suresi</Text>
         </View>
-        <Text style={styles.cardTitle}>{SURE.title}</Text>
-        <Text style={styles.cardContent}>
+        <Text style={[styles.cardTitle, { color: colors.primaryText }]}>{SURE.title}</Text>
+        <Text style={[styles.cardContent, { color: colors.secondaryText }]}>
           {SURE.content.substring(0, 100)}...
         </Text>
-        <Text style={styles.cardSource}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {SURE.author}</Text>
-        <Text style={styles.cardLink}>Arapça metni ve tefsiri okumak için tıklayın...</Text>
+        <Text style={[styles.cardSource, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {SURE.author}</Text>
+        <Text style={[styles.cardLink, { color: colors.accentText }]}>Arapça metni ve tefsiri okumak için tıklayın...</Text>
       </TouchableOpacity>
       {/* Günün Bilgisi Card */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <View style={styles.cardHeader}>
-          <MaterialIcons name="emoji-objects" size={28} color="#16a34a" />
-          <Text style={styles.cardHeaderText}>Günün Bilgisi</Text>
+          <MaterialIcons name="emoji-objects" size={28} color={colors.primary} />
+          <Text style={[styles.cardHeaderText, { color: colors.primaryText }]}>Günün Bilgisi</Text>
         </View>
-        <Text style={styles.cardTitle}>{FACT.title}</Text>
-        <Text style={styles.cardContent}>
+        <Text style={[styles.cardTitle, { color: colors.primaryText }]}>{FACT.title}</Text>
+        <Text style={[styles.cardContent, { color: colors.secondaryText }]}>
           {FACT.content}
         </Text>
       </View>
       {/* Günün Sureleri Section */}
-      <Text style={styles.sureSectionTitle}>Günün Sureleri</Text>
-      {loading && <ActivityIndicator size="large" color="#22c55e" style={{ marginTop: 24 }} />}
+      <Text style={[styles.sureSectionTitle, { color: colors.primaryText }]}>Günün Sureleri</Text>
+      {loading && <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />}
       {error && <Text style={{ color: 'red', margin: 16 }}>{error}</Text>}
       {!loading && !error && sures.map((sure) => {
         const sureIndexText = sure.sure_index ? ` (${sure.sure_index})` : '';
         return (
           <TouchableOpacity
             key={sure.sure_id}
-            style={styles.sureCard}
+            style={[styles.sureCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}
             activeOpacity={0.7}
             onPress={() => router.push({ pathname: `/sure-detail/${sure.sure_id}` as any, params: { ...sure, sure_id: undefined } })}
           >
             <View>
-              <Text style={styles.sureCardTitle}>{sure.sure_name} Suresi{sureIndexText}</Text>
-              <Text style={styles.sureCardSubtitle}>
+              <Text style={[styles.sureCardTitle, { color: colors.primaryText }]}>{sure.sure_name} Suresi{sureIndexText}</Text>
+              <Text style={[styles.sureCardSubtitle, { color: colors.secondaryText }]}>
                 <Text style={{ fontWeight: 'bold' }}>Toplam Ayet:</Text> {sure.sure_total_ayet} | <Text style={{ fontWeight: 'bold' }}>Dönem:</Text> {sure.sure_era}
               </Text>
             </View>
-            <MaterialIcons name="chevron-right" size={28} color="#bbb" style={{ position: 'absolute', right: 18, top: 28 }} />
+            <MaterialIcons name="chevron-right" size={28} color={colors.tertiaryText} style={{ position: 'absolute', right: 18, top: 28 }} />
           </TouchableOpacity>
         );
       })}

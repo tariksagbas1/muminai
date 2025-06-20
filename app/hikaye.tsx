@@ -3,22 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import MuminAIDropdown from './components/MuminAIDropdown';
+import { useFontSize } from '../hooks/useFontSize';
+import { useTheme } from '../hooks/useTheme';
 
 export default function HikayeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { fontSize } = useFontSize();
+  const { colors } = useTheme();
 
   // fallback if no params
-  const title = params.title || 'Hüsnü Zan ve İyi Düşünmenin Önemi';
-  const source = params.source || "İmam Gazali, İhyâ-u Ulûmi'd-Dîn";
-  const author = params.author || 'İmam Gazali';
-  const content = params.content || `Bir gün, bir grup insan bir araya gelerek birbirleri hakkında konuşmaya başladılar. İçlerinden biri, diğerlerinin kötü niyetli olduğunu ve her zaman olumsuz düşündüklerini söyledi. Ancak, bu sırada yaşlı bir bilge aralarına katıldı. Bilge, onlara şöyle dedi: 'Ey gençler! İnsanlar hakkında duyduğunuz her şeyde, mevcut iyi niyetleri görebilmeyi öğrenin. Eğer birinin kalbinde kötü bir niyet ararsanız, onu bulursunuz; ama eğer iyi bir niyet peşindeyseniz, o da sizi bulur.' Bu sözler üzerine grup, birbirlerine karşı olan önyargılarını sorgulamaya başladılar. Her biri, diğerlerini daha iyi anlamaya ve iyi düşünmeye gayret etti.`;
+  const title = (params.title as string) || 'Hüsnü Zan ve İyi Düşünmenin Önemi';
+  const source = (params.source as string) || "İmam Gazali, İhyâ-u Ulûmi'd-Dîn";
+  const author = (params.author as string) || 'İmam Gazali';
+  const content = (params.content as string) || `Bir gün, bir grup insan bir araya gelerek birbirleri hakkında konuşmaya başladılar. İçlerinden biri, diğerlerinin kötü niyetli olduğunu ve her zaman olumsuz düşündüklerini söyledi. Ancak, bu sırada yaşlı bir bilge aralarına katıldı. Bilge, onlara şöyle dedi: 'Ey gençler! İnsanlar hakkında duyduğunuz her şeyde, mevcut iyi niyetleri görebilmeyi öğrenin. Eğer birinin kalbinde kötü bir niyet ararsanız, onu bulursunuz; ama eğer iyi bir niyet peşindeyseniz, o da sizi bulur.' Bu sözler üzerine grup, birbirlerine karşı olan önyargılarını sorgulamaya başladılar. Her biri, diğerlerini daha iyi anlamaya ve iyi düşünmeye gayret etti.`;
 
   return (
     
 
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.header }]}>
         
         </View>
       <View style={styles.dropdownWrapper}>
@@ -29,14 +33,19 @@ export default function HikayeScreen() {
         inputPlaceholder="Sorunuzu yazınız..."
         onBack={() => router.back()}
         onShare={() => {}}
+        contextData={{
+          story_title: title as string,
+          story_source: source as string,
+          story: content as string
+        }}
       />
       </View>
       {/* Main Content */}
       <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.source}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {source} | <Text style={{fontWeight:'bold'}}>Yazar:</Text> {author}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.mainText}>{content}</Text>
+        <Text style={[styles.title, { color: colors.primaryText }]}>{title}</Text>
+        <Text style={[styles.source, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {source} | <Text style={{fontWeight:'bold'}}>Yazar:</Text> {author}</Text>
+        <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+        <Text style={[styles.mainText, { fontSize: fontSize, color: colors.storyText }]}>{content}</Text>
       </ScrollView>
     </View>
   );
