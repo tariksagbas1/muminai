@@ -63,7 +63,7 @@ export default function FontSettingsScreen() {
               style={[
                 styles.option,
                 { backgroundColor: colors.surface },
-                selectedSize === font.size && { backgroundColor: colors.primary + '20' },
+                selectedSize === font.size && { backgroundColor: colors.secondary + '20' },
               ]}
               onPress={() => handleFontSizeChange(font.size)}
             >

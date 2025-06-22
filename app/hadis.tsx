@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import MuminAIDropdown from './components/MuminAIDropdown';
@@ -14,11 +14,9 @@ export default function SureScreen() {
   const { colors } = useTheme();
 
   // fallback if no params
-  const title = (params.title as string) || 'Mülk (1-5)';
-  const author = (params.author as string) || 'Elmalılı Hamdi Yazır';
-  const content = (params.content as string) || `Mülk Suresi, Allah'ın yaratıcılığını, kudretini ve insanın hayat ve ölüm üzerindeki tasarrufunu anlatır...`;
-  const arabic = (params.arabic as string) || '';
-  const tefsir = (params.tefsir as string) || '';
+  const title = (params.title as string) || 'Müminlerin Kardeşliği';
+  const content = (params.content as string) || `Mümin, müminin kardeşidir; ona zulmetmez, onu düşmana teslim etmez. Kim kardeşinin bir ihtiyacını giderirse Allah da onun ihtiyaçlarını giderir.`;
+  const source = (params.source as string) || 'Sünen­-i Ebû Dâvûd';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -35,37 +33,21 @@ export default function SureScreen() {
         onBack={() => router.back()}
         onShare={() => {}}
         contextData={{
-          sure_title: title as string,
-          sure_meal: content as string,
-          sure_tefsir: tefsir as string,
-          sure_tefsir_author: author as string
+          hadis_meal: content as string,
+          hadis_source: source as string,
         }}
       />
       {/* Main Content */}
-      <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}}>
+      <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}} onScrollBeginDrag={Keyboard.dismiss}>
         <Text style={[styles.title, { color: colors.primaryText }]}>{title}</Text>
-        <Text style={[styles.source, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {author}</Text>
+        <Text style={[styles.source, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kitap Kaynağı:</Text> {source}</Text>
         <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-        {arabic ? (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Arapça Metin</Text>
-            <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-              <Text style={[styles.arabicText, { fontSize: fontSize + 2, color: colors.arabicText }]}>{arabic}</Text>
-            </View>
-          </>
-        ) : null}
+        
         <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Türkçe Meal</Text>
         <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
           <Text style={[styles.mainText, { fontSize: fontSize, color: colors.mealText }]}>{content}</Text>
         </View>
-        {tefsir ? (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Tefsir</Text>
-            <View style={[styles.sectionBox, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-              <Text style={[styles.tefsirText, { fontSize: fontSize, color: colors.tefsirText }]}>{tefsir}</Text>
-            </View>
-          </>
-        ) : null}
+        
       </ScrollView>
     </View>
   );

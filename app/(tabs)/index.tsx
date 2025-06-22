@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert, Button } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert, Button, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getOrCreateAnonUserId } from '../../utils/anonUserSupabase';
@@ -113,13 +113,11 @@ export default function OkuScreen() {
     content: dailyContent?.story || 'Yükleniyor...',
   };
 
-  // Dynamic SURE based on dailyContent
-  const SURE = {
-    title: dailyContent ? (dailyContent.sure_index ? `${dailyContent.sure_title} (${dailyContent.sure_index})` : dailyContent.sure_title) : 'Yükleniyor...',
-    author: dailyContent?.sure_tefsir_author || 'Yükleniyor...',
-    content: dailyContent?.sure_meal || 'Yükleniyor...',
-    arabic: dailyContent?.sure_arabic || '',
-    tefsir: dailyContent?.sure_tefsir || '',
+  // Dynamic HADIS based on dailyContent
+  const HADIS = {
+    title: dailyContent?.hadis_title || 'Yükleniyor...',
+    source: dailyContent?.hadis_source || 'Yükleniyor...',
+    content: dailyContent?.hadis_meal || 'Yükleniyor...',
   };
   const FACT = {
     title: dailyContent?.fun_fact_title || 'Yükleniyor...',
@@ -128,12 +126,16 @@ export default function OkuScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.header }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <View>
           <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
           <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Bugünün okumalarını yaptın mı?</Text>
-          <Button title="Clear User ID" onPress={clearUser} />
+           <Button title="Clear User ID" onPress={clearUser} />
         </View>
+        <Image 
+          source={require('../../assets/images/mumin-avatar_bg_removed.png')}
+          style={styles.avatar}
+        />
       </View>
       <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>Bugünün Okumaları</Text>
       {/* Günün Hikayesi Card */}
@@ -149,18 +151,18 @@ export default function OkuScreen() {
         <Text style={[styles.cardSource, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {HIKAYE.source}</Text>
         <Text style={[styles.cardLink, { color: colors.accentText }]}>Devamını okumak için tıklayın...</Text>
       </TouchableOpacity>
-      {/* Günün Suresi Card */}
-      <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]} onPress={() => router.push({ pathname: '/sure', params: SURE })}>
+      {/* Günün Hadisi Card */}
+      <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]} onPress={() => router.push({ pathname: '/hadis', params: HADIS })}>
         <View style={styles.cardHeader}>
           <MaterialIcons name="auto-awesome" size={28} color={colors.primary} />
-          <Text style={[styles.cardHeaderText, { color: colors.primaryText }]}>Günün Suresi</Text>
+          <Text style={[styles.cardHeaderText, { color: colors.primaryText }]}>Günün Hadis-i-Şerifi</Text>
         </View>
-        <Text style={[styles.cardTitle, { color: colors.primaryText }]}>{SURE.title}</Text>
+        <Text style={[styles.cardTitle, { color: colors.primaryText }]}>{HADIS.title}</Text>
         <Text style={[styles.cardContent, { color: colors.secondaryText }]}>
-          {SURE.content.substring(0, 100)}...
+          {HADIS.content.substring(0, 50)}...
         </Text>
-        <Text style={[styles.cardSource, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Tefsir Kaynağı:</Text> {SURE.author}</Text>
-        <Text style={[styles.cardLink, { color: colors.accentText }]}>Arapça metni ve tefsiri okumak için tıklayın...</Text>
+        <Text style={[styles.cardSource, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kaynak Kitabı:</Text> {HADIS.source}</Text>
+        <Text style={[styles.cardLink, { color: colors.accentText }]}>Tamamını okumak için tıklayın...</Text>
       </TouchableOpacity>
       {/* Günün Bilgisi Card */}
       <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 60,
     textAlign: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     borderRadius: 16,
   },
   title: {
@@ -222,6 +224,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 20,
     color: '#6b7280',
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginLeft: 16,
   },
   sectionTitle: {
     fontSize: 30,

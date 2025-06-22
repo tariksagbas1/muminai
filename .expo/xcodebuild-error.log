@@ -1,10 +1,3 @@
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
-{ platform:iOS Simulator, arch:arm64, id:E7570EA0-2956-4243-9E80-B51FFB342151, OS:18.5, name:iPhone 16 Plus }
-{ platform:iOS Simulator, arch:x86_64, id:E7570EA0-2956-4243-9E80-B51FFB342151, OS:18.5, name:iPhone 16 Plus }
-** BUILD FAILED **
-
-
-The following build commands failed:
-	PhaseScriptExecution [CP-User]\ Generate\ Specs /Users/tariksagbas/Library/Developer/Xcode/DerivedData/MuminAI-enfaqxeviisqnnassljtdfiewvxr/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/ReactCodegen.build/Script-46EB2E0002A270.sh (in target 'ReactCodegen' from project 'Pods')
-	Building workspace MuminAI with scheme MuminAI and configuration Debug
-(2 failures)
+{ platform:iOS Simulator, arch:arm64, id:440DC509-C617-4E8F-BAA9-265EFB35F7C0, OS:18.5, name:iPhone 16 }
+{ platform:iOS Simulator, arch:x86_64, id:440DC509-C617-4E8F-BAA9-265EFB35F7C0, OS:18.5, name:iPhone 16 }

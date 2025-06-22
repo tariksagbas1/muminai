@@ -1,9 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Keyboard, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
-const OPENAI_API_KEY = '';
+const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
 // User-specific conversation cache
 const userConversationCache: { [userId: string]: Array<{ from: 'user' | 'ai'; text: string }> } = {};
@@ -12,7 +12,7 @@ const userConversationCache: { [userId: string]: Array<{ from: 'user' | 'ai'; te
 const getUserCache = (userId: string) => {
   if (!userConversationCache[userId]) {
     userConversationCache[userId] = [
-      { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dileresiniz?' }
+      { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dilersiniz?' }
     ];
   }
   return userConversationCache[userId];
@@ -46,18 +46,61 @@ export default function SorScreen() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState(getCachedMessages(userId));
   const [loading, setLoading] = useState(false);
+  const [currentAIResponse, setCurrentAIResponse] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   // Load cached messages when component mounts
   useEffect(() => {
     setMessages(getCachedMessages(userId));
   }, [userId]);
 
+  // useEffect for the typewriter animation
+  useEffect(() => {
+    if (isTyping && currentAIResponse) {
+      let index = 0;
+      const intervalId = setInterval(() => {
+        if (index < currentAIResponse.length) {
+          const char = currentAIResponse.charAt(index); // Use charAt for safety
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            
+            // Proper immutable update
+            newMessages[newMessages.length - 1] = {
+              ...lastMessage,
+              text: lastMessage.text + char,
+            };
+            
+            return newMessages;
+          });
+          index++;
+        } else {
+          clearInterval(intervalId);
+          setIsTyping(false);
+          setLoading(false);
+          // Now that typing is complete, add the final message to the cache
+          addToUserCache(userId, { from: 'ai', text: currentAIResponse });
+          setCurrentAIResponse('');
+        }
+      }, 3); // Typing speed in milliseconds
+
+      return () => clearInterval(intervalId);
+    }
+  }, [isTyping, currentAIResponse, userId]);
+
   const generateResponse = async (userInput: string) => {
     try {
-      const systemPrompt = "You are an Islamic Q&A assistant named Mümin, for Turkish Seniors. You should be acting as if you are wise knowledgable person fully committed to and supporting to Islam. You are a strong supporter of Islam. You are not to talk about anything that is Haram. Always be respectful and formal. Always answer in Turkish.";
+      const systemPrompt = `You are an Islamic Q&A assistant named Mümin.
+      You are a wise knowledgable Muslim fully committed to and supporting to Islam.
+      You are not to talk about anything that is Haram.
+      Always be respectful, concise and formal.
+      Quote the Kuran frequently when you answer.
+      Always answer in Old Turkish.
+      Do not use more than 400 tokens.
+      `;
       
       // Build conversation history from the last few messages
-      const conversationHistory = messages.slice(-6).map(msg => ({
+      const conversationHistory = messages.slice(-10).map(msg => ({
         role: msg.from === 'user' ? 'user' : 'assistant',
         content: msg.text
       }));
@@ -69,14 +112,14 @@ export default function SorScreen() {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4.1',
           messages: [
             { role: 'system', content: systemPrompt },
             ...conversationHistory,
-            { role: 'user', content: 'Ya Mümin,' + userInput }
+            { role: 'user', content: 'Ey Mümin,' + userInput }
           ],
           temperature: 0.7,
-          max_tokens: 500
+          max_tokens: 400
         })
       });
 
@@ -85,6 +128,7 @@ export default function SorScreen() {
       }
 
       const data = await response.json();
+      console.log(data.usage.total_tokens);
       return data.choices[0]?.message?.content || 'Üzgünüm, bir cevap oluşturulamadı.';
     } catch (error) {
       console.error('OpenAI Error:', error);
@@ -92,34 +136,34 @@ export default function SorScreen() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const handleSend = async (text?: string) => {
+    const textToSend = (text || input).trim();
+    if (!textToSend || isTyping) return;
     
-    const userMessage = { from: 'user' as const, text: input };
+    const userMessage = { from: 'user' as const, text: textToSend };
     setMessages((prev) => [...prev, userMessage]);
-    addToUserCache(userId, userMessage); // Add to user-specific cache
     setInput('');
+    Keyboard.dismiss();
     setLoading(true);
 
     try {
-      const response = await generateResponse(input);
-      const aiMessage = { from: 'ai' as const, text: response };
-      setMessages((prev) => [...prev, aiMessage]);
-      addToUserCache(userId, aiMessage); // Add to user-specific cache
+      const response = await generateResponse(textToSend);
+      setMessages((prev) => [...prev, { from: 'ai' as const, text: '' }]);
+      setCurrentAIResponse(response.trim());
+      setIsTyping(true);
     } catch (error) {
       Alert.alert(
         'Hata',
         'Yanıt alınırken bir hata oluştu. Lütfen tekrar deneyin.',
         [{ text: 'Tamam' }]
       );
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { backgroundColor: colors.header }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <View>
           <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
           <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Mümine sor.</Text>
@@ -128,18 +172,37 @@ export default function SorScreen() {
       
       <ScrollView style={[styles.messages, { backgroundColor: colors.background }]} contentContainerStyle={{ padding: 16, marginTop: 0 }}>
         {messages.map((msg, idx) => (
-          <View key={idx} style={[
-            styles.message, 
-            msg.from === 'user' ? 
-              [styles.userMsg, { backgroundColor: colors.primary }] : 
-              [styles.aiMsg, { backgroundColor: colors.surface }]
-          ]}>
-            <Text style={{ 
-              color: msg.from === 'user' ? colors.background : colors.primaryText 
-            }}>
-              {msg.text}
-            </Text>
-          </View>
+          msg.from === 'user' ? (
+            <View key={idx} style={[
+              styles.messageBubble, 
+              styles.userMsg, 
+              { backgroundColor: colors.primary }
+            ]}>
+              <Text style={{ 
+                color: colors.background 
+              }}>
+                {msg.text}
+              </Text>
+            </View>
+          ) : (
+            <View key={idx} style={styles.aiMessageContainer}>
+              <Image 
+                source={require('../../assets/images/mumin-avatar_bg_removed.png')}
+                style={styles.aiAvatar}
+              />
+              <View style={[
+                styles.messageBubble,
+                styles.aiMsg,
+                { backgroundColor: colors.surface }
+              ]}>
+                <Text style={{ 
+                  color: colors.primaryText 
+                }}>
+                  {msg.text}
+                </Text>
+              </View>
+            </View>
+          )
         ))}
         {loading && <Text style={[styles.loadingText, { color: colors.tertiaryText }]}>Yanıtlanıyor...</Text>}
       </ScrollView>
@@ -160,18 +223,24 @@ export default function SorScreen() {
           placeholder="Sorunuzu yazın..."
           placeholderTextColor={colors.tertiaryText}
           value={input}
-          onChangeText={setInput}
-          editable={!loading}
+          onChangeText={(text) => {
+            if (text.endsWith('\n')) {
+              // Send the text without the newline character
+              handleSend(text.slice(0, -1));
+            } else {
+              setInput(text);
+            }
+          }}
           multiline={true}
-          onSubmitEditing={handleSend}
+          editable={!loading}
           returnKeyType="send"
         />
         <TouchableOpacity 
-          style={[styles.sendBtn, { backgroundColor: colors.primary }]} 
-          onPress={handleSend} 
+          style={[styles.sendBtn, loading && styles.sendBtnDisabled, { backgroundColor: colors.primary }]} 
+          onPress={() => handleSend()}
           disabled={loading}
         >
-          <MaterialIcons name="send" size={24} color={colors.background} />
+          <MaterialIcons name="send" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -201,17 +270,33 @@ const styles = StyleSheet.create({
   messages: {
     flex: 1,
   },
-  message: {
+  messageBubble: {
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
-    maxWidth: '80%',
+    maxWidth: '100%',
   },
   userMsg: {
     alignSelf: 'flex-end',
+    maxWidth: '80%',
+  },
+  aiMessageContainer: {
+    alignSelf: 'flex-start',
+    maxWidth: '80%',
+    marginBottom: 8,
+  },
+  aiAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 20,
+    marginLeft: 10,
+    marginBottom: -5,
+    zIndex: 1,
   },
   aiMsg: {
     alignSelf: 'flex-start',
+    borderTopLeftRadius: 0,
+    marginLeft: 0,
   },
   loadingText: {
     marginTop: 8,
@@ -233,5 +318,9 @@ const styles = StyleSheet.create({
   sendBtn: {
     borderRadius: 10,
     padding: 10,
+  },
+  sendBtnDisabled: {
+    backgroundColor: 'rgb(72, 72, 72)',
+    color: 'rgb(100, 100, 100)',
   },
 });

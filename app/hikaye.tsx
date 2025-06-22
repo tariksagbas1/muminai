@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import MuminAIDropdown from './components/MuminAIDropdown';
@@ -41,7 +41,7 @@ export default function HikayeScreen() {
       />
       </View>
       {/* Main Content */}
-      <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}}>
+      <ScrollView style={styles.contentScroll} contentContainerStyle={{padding: 20}} onScrollBeginDrag={Keyboard.dismiss}>
         <Text style={[styles.title, { color: colors.primaryText }]}>{title}</Text>
         <Text style={[styles.source, { color: colors.tertiaryText }]}><Text style={{fontWeight:'bold'}}>Kaynak:</Text> {source} | <Text style={{fontWeight:'bold'}}>Yazar:</Text> {author}</Text>
         <View style={[styles.divider, { backgroundColor: colors.divider }]} />

@@ -1,5 +1,6 @@
 {
   "expo": {
+    "projectId": "817cddb7-5c21-40d4-898b-d4fdbe9f3534",
     "name": "MuminAI",
     "slug": "MuminAI",
     "version": "1.0.0",
@@ -17,6 +18,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.MuminAI"
     },
@@ -39,6 +41,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "817cddb7-5c21-40d4-898b-d4fdbe9f3534"
+      }
     }
   }
 }

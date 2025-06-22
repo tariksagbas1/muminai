@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Dimensions, Alert, ScrollView, BackHandler, Keyboard, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Dimensions, Alert, ScrollView, BackHandler, Keyboard } from 'react-native';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
 import SparkleIcon from './SparkleIcon';
 import { useTheme } from '../../hooks/useTheme';
@@ -35,8 +35,6 @@ export default function MuminAIDropdown({
     story_title?: string;
     story_source?: string;
     story?: string;
-    hadis_source?: string;
-    hadis_meal?: string;
     [key: string]: any;
   };
 }) {
@@ -120,8 +118,6 @@ export default function MuminAIDropdown({
       You are not to talk about anything that is Haram.
       Always be respectful and formal.
       Always quote the given source or the Kuran when you answer.
-      Always answer in Old Turkish.
-      Do not use more than 400 tokens.
       `;
       
       // Add context data to system prompt if available
@@ -140,10 +136,6 @@ export default function MuminAIDropdown({
           contextInfo += `\n\nBu konuşma "${contextData.story_title}" hakkındadır. `;
           contextInfo += `\n\nKaynak: ${contextData.story_source}`;
           contextInfo += `\n\nİçerik:\n${contextData.story}`;
-        }
-        if (contextData.hadis_meal && contextData.hadis_source) {
-          contextInfo += `\n\nBu konuşma "${contextData.hadis_meal}" Hadisi hakkındadır. `;
-          contextInfo += `\n\nKaynak Kitabı: ${contextData.hadis_source}`;
         }
         
         if (contextInfo) {
@@ -171,7 +163,7 @@ export default function MuminAIDropdown({
             { role: 'user', content: userInput }
           ],
           temperature: 0.7,
-          max_tokens: 400
+          max_tokens: 300
         })
       });
 
@@ -220,8 +212,9 @@ export default function MuminAIDropdown({
           <MaterialIcons name="arrow-back" size={35} color={colors.button_color} />
         </TouchableOpacity>
         <View style={styles.sparkleRow}>
-          <Image source={require('../../assets/images/mumin-avatar_bg_removed.png')} style={styles.avatar} />
+          <SparkleIcon size={18} color={colors.accentText} style={{ marginRight: 6, marginTop: 1 }} />
           <Text style={[styles.headerText, {color: colors.accentText}]}>{headerText}</Text>
+          <SparkleIcon size={18} color={colors.accentText} style={{ marginLeft: 6, marginTop: 1 }} />
         </View>
         <TouchableOpacity onPress={onShare} style={[styles.iconBtn, {marginRight: 2, marginTop: 5}]}>
           <Feather name="share-2" size={25} color={colors.button_color}/>
@@ -230,7 +223,7 @@ export default function MuminAIDropdown({
       <Text style={[styles.prompt, { backgroundColor: colors.background_accent }]}>{prompt}</Text>
       {/* Arrow Button */}
       <View style={[styles.arrowRow, { backgroundColor: colors.background_accent }]} pointerEvents="box-none" >
-        <TouchableOpacity onPress={() => setOpen((v) => !v)} style={{width: 120, height: 80, alignItems: 'center', justifyContent: 'center'}}>
+        <TouchableOpacity onPress={() => setOpen((v) => !v)} style={{width: 120, height: 50, alignItems: 'center', justifyContent: 'center', overflow: ''}}>
           <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={18} color={colors.button_color2} style={styles.arrowBtn} />
         </TouchableOpacity>
       </View>
@@ -244,7 +237,7 @@ export default function MuminAIDropdown({
               opacity: animatedHeight.interpolate({ inputRange: [0, 40], outputRange: [0, 1], extrapolate: 'clamp' }),
               marginBottom: open ? -20 : -10,
               backgroundColor: colors.background_accent_2,
-              marginTop: 30,
+              marginTop: 10,
             },
           ]}
           pointerEvents={open ? 'auto' : 'none'}
@@ -264,11 +257,7 @@ export default function MuminAIDropdown({
                   onScrollBeginDrag={Keyboard.dismiss}
                 >
                   {messages.map((msg, idx) => (
-                    <View key={idx} style={[
-                      styles.message, 
-                      msg.from === 'user' ? styles.userMsg : styles.aiMsg,
-                      { backgroundColor: msg.from === 'user' ? colors.accentText : '#f3f4f6' }
-                    ]}>
+                    <View key={idx} style={[styles.message, msg.from === 'user' ? styles.userMsg : styles.aiMsg]}>
                       <Text style={[styles.messageText, msg.from === 'user' ? styles.userMsgText : styles.aiMsgText]}>
                         {msg.text}
                       </Text>
@@ -367,14 +356,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 20,
-    marginRight: 8,
-  },
   headerText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 0,
@@ -394,8 +377,8 @@ const styles = StyleSheet.create({
   arrowRow: {
     width: '100%',
     alignItems: 'center',
-    marginTop: -40,
-    marginBottom: -60,
+    marginTop: 0,
+    marginBottom: -50,
     zIndex: 3,
   },
   arrowBtn: {
@@ -410,7 +393,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 10,
     borderColor: '#eee',
-    marginTop: 70,
+    marginTop: 10,
     textAlign: 'center',
   },
   dropdownCard: {
@@ -433,7 +416,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     marginBottom: 10,
-    marginTop: 10,
     marginHorizontal: 0,
     alignSelf: 'stretch',
   },
@@ -460,7 +442,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   userMsg: {
-    backgroundColor: 'rgb(0, 119, 44)',
+    backgroundColor: '#22c55e',
     alignSelf: 'flex-end',
   },
   aiMsg: {

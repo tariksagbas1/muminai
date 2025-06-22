@@ -106,23 +106,42 @@ export async function getNotifications() {
 }
 
 export async function registerForPushNotifications() {
-  if (Device.isDevice) {
-    console.log('Must use physical device for push')
-    return
-  }
+  //if (!Device.isDevice) {
+  //  console.log('Must use physical device for push')
+  //  return
+  //}
   const { status: existing } = await Notifications.getPermissionsAsync()
   let finalStatus = existing
+  console.log('Existing status:', existing)
   if (existing !== 'granted') {
+    console.log('Requesting push permission')
+  try {
     const { status } = await Notifications.requestPermissionsAsync()
     finalStatus = status
+    console.log('New status:', finalStatus)
+  } catch (error) {
+    console.error('Failed to get push token. This is expected on a simulator.', error);
+    alert('Failed to get push token. This is expected on a simulator.');
+    return
+  }
   }
   if (finalStatus !== 'granted') {
     console.log('Push permission denied')
     return
   }
+  try {
+  console.log('Getting push token');
   const { data: { data: token } } = await Notifications.getExpoPushTokenAsync()
   console.log('Push token:', token)
+  let testToken = 712638121; // TODO: Remove this
   await supabase
     .from('device_tokens')
-    .upsert({ token }, { onConflict: 'token' })
+    .upsert({ token : testToken}, { onConflict: ['token'] })
+    console.log("Token inserted");
+  }
+  catch (error) {
+    console.error('Failed to get push token. This is expected on a simulator.', error);
+    alert('Failed to get push token. This is expected on a simulator.');
+    return
+  }
 }

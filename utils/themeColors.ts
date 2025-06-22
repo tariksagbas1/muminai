@@ -3,7 +3,7 @@ export const themeColors = {
     // Background colors
     background: 'white',
     background_accent: 'rgb(245, 255, 246)',
-    background_accent_2: 'rgb(248, 255, 248)',
+    background_accent_2: 'rgb(217, 239, 221)',
     surface: '#f9f9f9',
     card: '#ffffff',
     header: 'rgb(255, 255, 255)',
