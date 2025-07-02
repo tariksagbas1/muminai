@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "86068209549",
+    "project_id": "mumin-ai",
+    "storage_bucket": "mumin-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:86068209549:android:d05dfe9acdecfb115dffc4",
+        "android_client_info": {
+          "package_name": "com.anonymous.MuminAI"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe2NNf1S5Jh8OMtFkmfHuu7ZG-U106nJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

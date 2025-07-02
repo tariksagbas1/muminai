@@ -1,15 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { Linking, PermissionsAndroid, Platform } from 'react-native';
 import { supabase } from './supabaseClient';
-import * as Device from 'expo-device'
-import * as Notifications from 'expo-notifications'
 
 const ANON_KEY = 'anonUserId';
 
 export async function getOrCreateAnonUserId() {
   // 1. Check AsyncStorage
-  console.log('Getting or creating anon user id');
   let id = await AsyncStorage.getItem(ANON_KEY);
-  console.log(`ID is: ${id}`);
+  console.log(`User ID: ${id}`);
   if (id) return id;
 
   // FIRST TIME USER
@@ -22,8 +22,7 @@ export async function getOrCreateAnonUserId() {
   // 2. Insert settings with DEFAULT values on async storage
   await AsyncStorage.setItem('fontSize', '18');
   await AsyncStorage.setItem('theme', 'light');
-  await AsyncStorage.setItem('sureNotification', 'false');
-  await AsyncStorage.setItem('readingNotification', 'false');
+  await AsyncStorage.setItem('tone', 'light');
 
   id = String(user_id);
   await AsyncStorage.setItem(ANON_KEY, id);
@@ -81,47 +80,98 @@ export async function getTheme() {
   }
 }
 
-export async function updateNotifications(sureNotifBool, readingNotifBool) {
-  try {
-  const key1 = 'sureNotification';
-  const key2 = 'readingNotification';
-  await AsyncStorage.setItem(key1, String(sureNotifBool));
-  await AsyncStorage.setItem(key2, String(readingNotifBool));
-  return 0;
-  } catch (error) {
-    console.error('Error updating notifications:', error);
-    return 1;
+export async function updateNotifications(Bool) {
+  if (Bool) {
+    // 1) check OS permission
+    const { status: existing } = await Notifications.getPermissionsAsync();
+  
+    if (existing !== 'granted') {
+        Linking.openSettings();
+        return 1;
+      }
+    
+    // 2) now it’s safe to get a token
+    const { data: token } = await Notifications.getExpoPushTokenAsync();
+    await supabase
+      .from('device_tokens')
+      .upsert({ token, notifs_enabled: true }, { onConflict: ['token'] });
+    return 0;
+  }
+  else {
+    // If user has permission, but wants to disable notifications
+    const { status: existing } = await Notifications.getPermissionsAsync();
+
+    if (existing === 'granted') {
+      const { data: token } = await Notifications.getExpoPushTokenAsync();
+      await supabase
+      .from('device_tokens')
+      .upsert({ token, notifs_enabled: false }, { onConflict: ['token'] });
+    return 0;
+    }
+    else {
+      return 1;
+    }
   }
 }
 
 export async function getNotifications() {
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  
+  if (existing === 'granted') {
+    const { data: token } = await Notifications.getExpoPushTokenAsync();
+    const { data: record, error } = await supabase
+    .from('device_tokens')
+    .select('notifs_enabled')
+    .eq('token', token)
+    .single();
+
+  if (error) throw error;
+  return record.notifs_enabled; // Returns true if enabled, false if disabled
+  }
+  else {
+    return false; // Notifications have been disabled from the OS
+  }
+}
+
+export async function updateTone(newTone) {
   try {
-    const sureNotif = await AsyncStorage.getItem('sureNotification');
-    const readingNotif = await AsyncStorage.getItem('readingNotification');
-    return { sureNotif: sureNotif === 'true', readingNotif: readingNotif === 'true' };
+  const key = 'tone';
+  const stored = await AsyncStorage.getItem(key);
+  // If no changes made, return 0
+  if (stored !== null && stored === newTone) return 0;
+  // If updated. Update Async storage
+  await AsyncStorage.setItem(key, String(newTone));
+  return 0;
   } catch (error) {
-    console.error('Error getting notifications:', error);
-    return { sureNotif: false, readingNotif: false }; // Default fallback
+    console.error('Error updating tone:', error);
+    return 1;
+  }
+}
+
+export async function getTone() {
+  try {
+    const tone = await AsyncStorage.getItem('tone');
+    return tone ? tone : 'light'; // Default to 'light' toning
+  } catch (error) {
+    console.error('Error getting tone:', error);
+    return 'light'; // Default fallback
   }
 }
 
 export async function registerForPushNotifications() {
-  //if (!Device.isDevice) {
-  //  console.log('Must use physical device for push')
-  //  return
-  //}
+  if (!Device.isDevice) {
+    console.log('Must use physical device for push')
+    return
+  }
   const { status: existing } = await Notifications.getPermissionsAsync()
   let finalStatus = existing
-  console.log('Existing status:', existing)
   if (existing !== 'granted') {
-    console.log('Requesting push permission')
   try {
     const { status } = await Notifications.requestPermissionsAsync()
     finalStatus = status
     console.log('New status:', finalStatus)
   } catch (error) {
-    console.error('Failed to get push token. This is expected on a simulator.', error);
-    alert('Failed to get push token. This is expected on a simulator.');
+    console.error('Failed to get push token.', error);
     return
   }
   }
@@ -130,18 +180,28 @@ export async function registerForPushNotifications() {
     return
   }
   try {
-  console.log('Getting push token');
-  const { data: { data: token } } = await Notifications.getExpoPushTokenAsync()
-  console.log('Push token:', token)
-  let testToken = 712638121; // TODO: Remove this
+  const { data: token } = await Notifications.getExpoPushTokenAsync()
   await supabase
     .from('device_tokens')
-    .upsert({ token : testToken}, { onConflict: ['token'] })
-    console.log("Token inserted");
+    .upsert({ token : token}, { onConflict: ['token'] })
+    console.log("Token inserted", token);
   }
   catch (error) {
-    console.error('Failed to get push token. This is expected on a simulator.', error);
-    alert('Failed to get push token. This is expected on a simulator.');
+    console.error('Failed to get push token', error);
     return
   }
+}
+
+export async function androidMicPermission() {
+  if (Platform.OS === 'android') {
+    const ok = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      {
+        title: 'Mikrofon İzni',
+        message: 'Konuşmanızı metne dönüştürebilmek için mikrofon izni gerekiyor.'
+      }
+    );
+    return ok === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  return true;
 }

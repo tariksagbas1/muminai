@@ -73,6 +73,10 @@
     </array>
     <key>UIUserInterfaceStyle</key>
     <string>Automatic</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Konuşmak için mikrofon izni veriniz.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Konuşma tanıma için izin veriniz.</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
   </dict>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, AppState, AppStateStatus } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { updateNotifications, getNotifications } from '../utils/anonUserSupabase';
@@ -7,47 +7,53 @@ import { useTheme } from '../hooks/useTheme';
 
 export default function NotificationSettingsScreen() {
   const router = useRouter();
-  const [sureBildirim, setSureBildirim] = useState(false);
-  const [okumaBildirim, setOkumaBildirim] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { colors } = useTheme();
 
   useEffect(() => {
-    loadSavedNotifications();
+    loadNotificationStatus();
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    return () => sub.remove();
   }, []);
 
-  const loadSavedNotifications = async () => {
-    try {
-      const notifications = await getNotifications();
-      setSureBildirim(notifications.sureNotif);
-      setOkumaBildirim(notifications.readingNotif);
-    } catch (error) {
-      console.error('Error loading saved notifications:', error);
+  const handleAppStateChange = (state: AppStateStatus) => {
+    if (state === 'active') {
+      loadNotificationStatus();
     }
   };
 
-  const handleSureBildirimChange = async (value: boolean) => {
+  const loadNotificationStatus = async () => {
+    setLoading(true);
     try {
-      const result = await updateNotifications(value, okumaBildirim);
-      if (result === 0) {
-        setSureBildirim(value);
-      } else {
-        console.error('Sure notification update failed');
-      }
+      const enabled = await getNotifications();
+      setNotificationEnabled(!!enabled);
     } catch (error) {
-      console.error('Error updating sure notification:', error);
+      console.error('Error loading notification status:', error);
+      setNotificationEnabled(false);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOkumaBildirimChange = async (value: boolean) => {
+  const handleNotificationChange = async (value: boolean) => {
+    // Optimistically do not update UI until backend confirms
     try {
-      const result = await updateNotifications(sureBildirim, value);
+      const result = await updateNotifications(value);
       if (result === 0) {
-        setOkumaBildirim(value);
+        setNotificationEnabled(value);
       } else {
-        console.error('Reading notification update failed');
+        // Optionally, show a message to the user
+        if (value) {
+          Alert.alert(
+            'Bildirimleri Etkinleştirin',
+            'Lütfen bildirim izinlerini cihaz ayarlarından açın.'
+          );
+        }
+        // Do not update the UI
       }
     } catch (error) {
-      console.error('Error updating reading notification:', error);
+      console.error('Error updating notification:', error);
     }
   };
 
@@ -66,39 +72,25 @@ export default function NotificationSettingsScreen() {
           Günlük hatırlatmaları özelleştirin.
         </Text>
 
-        {/* Switches */}
+        {/* Single Switch */}
         <View style={[styles.settingsContainer, { backgroundColor: colors.card }]}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={[styles.settingTitle, { color: colors.primaryText }]}>Günün Sureleri</Text>
-              <Text style={[styles.settingDescription, { color: colors.secondaryText }]}>Her gün yeni 3 sure için bildirim alın</Text>
+              <Text style={[styles.settingTitle, { color: colors.primaryText }]}>Günlük Bildirimler</Text>
+              <Text style={[styles.settingDescription, { color: colors.secondaryText }]}>Günlük okumalarınız güncellenince bildirim alın</Text>
             </View>
             <Switch
-              value={sureBildirim}
-              onValueChange={handleSureBildirimChange}
+              value={notificationEnabled}
+              onValueChange={handleNotificationChange}
               trackColor={{ false: colors.disabled, true: colors.success }}
               ios_backgroundColor={colors.disabled}
-            />
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Text style={[styles.settingTitle, { color: colors.primaryText }]}>Günün Okumaları</Text>
-              <Text style={[styles.settingDescription, { color: colors.secondaryText }]}>Günün okumaları için hatırlatma alın</Text>
-            </View>
-            <Switch
-              value={okumaBildirim}
-              onValueChange={handleOkumaBildirimChange}
-              trackColor={{ false: colors.disabled, true: colors.success }}
-              ios_backgroundColor={colors.disabled}
+              disabled={loading}
             />
           </View>
         </View>
 
         <Text style={[styles.note, { color: colors.secondaryText }]}>
-          Not: Bildirimleri kapatmak için telefonunuzun ayarlarından da değişiklik yapmanız gerekebilir.
+          Not: Bildirimlere ilk kez izin verirken Ayarlardan bildirimleri açmanız gerekebilir.
         </Text>
       </View>
     </View>
@@ -170,7 +162,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   note: {
-    fontSize: 14,
+    fontSize: 17,
     color: '#666',
     fontStyle: 'italic',
     textAlign: 'center',

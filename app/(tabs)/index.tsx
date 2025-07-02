@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Alert, Button, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { getOrCreateAnonUserId } from '../../utils/anonUserSupabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { getOrCreateAnonUserId } from '../../utils/anonUserSupabase';
+
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGtnYWxwaWJidW1hbHlsbW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5ODY2MzUsImV4cCI6MjA2NTU2MjYzNX0.VVg1x3-m1bsuU2RpJgnGqUqACZ7FVdisdctjobGQ680";
 
 async function loadUserSuras(user_id: number) {
-  const PROJECT_REF = process.env.EXPO_PUBLIC_SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_REF;
-  const ANON_KEY = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) as string;
   const res = await fetch(
-    `https://${PROJECT_REF}.functions.supabase.co/return-sures`,
+    `https://ewxkgalpibbumalylmma.functions.supabase.co/return-sures`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ANON_KEY}`,
-        'apikey': ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       } as Record<string, string>,
       body: JSON.stringify({ user_id }),
     }
@@ -25,16 +24,13 @@ async function loadUserSuras(user_id: number) {
   return res.json();
 }
 async function loadUserDailyContent(user_id: number) {
-  const PROJECT_REF = process.env.EXPO_PUBLIC_SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_REF;
-  const ANON_KEY = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) as string;
   const res = await fetch(
-    `https://${PROJECT_REF}.functions.supabase.co/return-daily-content`,
+    `https://ewxkgalpibbumalylmma.functions.supabase.co/return-daily-content`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ANON_KEY}`,
-        'apikey': ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       } as Record<string, string>,
       body: JSON.stringify({ user_id }),
     }
@@ -130,10 +126,10 @@ export default function OkuScreen() {
         <View>
           <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
           <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Bugünün okumalarını yaptın mı?</Text>
-           <Button title="Clear User ID" onPress={clearUser} />
+           {/* <Button title="Clear User ID" onPress={clearUser} /> */}
         </View>
         <Image 
-          source={require('../../assets/images/mumin-avatar_bg_removed.png')}
+          source={require('../../assets/images/Untitled design.png')}
           style={styles.avatar}
         />
       </View>
@@ -230,6 +226,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginLeft: 16,
+    transform: [{ scale: 1.15 }],
   },
   sectionTitle: {
     fontSize: 30,

@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function AyarlarScreen() {
@@ -22,7 +22,7 @@ export default function AyarlarScreen() {
       iconBg: colors.icon_bg,
       iconColor: colors.primary,
       title: 'Görünüm',
-      subtitle: 'Açık veya Koyu Mod',
+      subtitle: 'Açık, Koyu ve Gri Temalar',
       onPress: () => router.push('/display_settings'),
     },
     {
@@ -30,8 +30,16 @@ export default function AyarlarScreen() {
       iconBg: colors.icon_bg,
       iconColor: colors.primary,
       title: 'Bildirimler',
-      subtitle: 'Günün Suresi ve hatırlatmalar',
+      subtitle: 'Günün suresi ve hatırlatmalar',
       onPress: () => router.push('/notification_settings'),
+    },
+    {
+      icon: 'record-voice-over' as const,
+      iconBg: colors.icon_bg,
+      iconColor: colors.primary,
+      title: `Mümin'in Türkçesi`,
+      subtitle: 'Yanıtların Türkçe ağırlığını ayarlayın',
+      onPress: () => router.push('/tone_settings'),
     },
   ];
 
@@ -72,10 +80,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 24,
     marginBottom: 2,
-    marginTop: 50,
+    marginTop: 60,
   },
   subtitle: {
-    fontSize: 22,
+    fontSize: 20,
     marginLeft: 24,
     marginBottom: 18,
   },
@@ -104,6 +112,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cardSubtitle: {
-    fontSize: 17,
+    fontSize: 16,
   },
 }); 

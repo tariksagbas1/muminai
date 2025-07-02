@@ -1,13 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Dimensions, Alert, ScrollView, BackHandler, Keyboard, Image } from 'react-native';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
-import SparkleIcon from './SparkleIcon';
+import { getTone } from '@/utils/anonUserSupabase';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Dimensions, Image, Keyboard, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DROPDOWN_MAX_HEIGHT = SCREEN_HEIGHT * 0.4;
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGtnYWxwaWJidW1hbHlsbW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5ODY2MzUsImV4cCI6MjA2NTU2MjYzNX0.VVg1x3-m1bsuU2RpJgnGqUqACZ7FVdisdctjobGQ680"
+
 
 
 export default function MuminAIDropdown({
@@ -120,14 +121,22 @@ export default function MuminAIDropdown({
       You are not to talk about anything that is Haram.
       Always be respectful and formal.
       Always quote the given source or the Kuran when you answer.
-      Always answer in Old Turkish.
-      Do not use more than 400 tokens.
+      Keep it short and concise.
+      Do not use more than 350 words.
       `;
-      
+      getTone().then(tone => {
+        console.log(tone);
+        if (tone === 'heavy') {
+          systemPrompt += `Always answer in Old Turkish.`;
+          userInput = "Ey Mümin, " + userInput;
+        }
+        if (tone === 'light') {
+          systemPrompt += `Always answer in Modern Turkish. Minimize arabic words.`;
+        }
+      });
       // Add context data to system prompt if available
       if (contextData) {
         let contextInfo = "";
-        
         // For sure pages
         if (contextData.sure_title && contextData.sure_meal && contextData.sure_tefsir) {
           contextInfo += `\n\nBu konuşma ${contextData.sure_title} Suresi hakkındadır. `;
@@ -157,23 +166,20 @@ export default function MuminAIDropdown({
         content: msg.text
       }));
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: userInput }
-          ],
-          temperature: 0.7,
-          max_tokens: 400
-        })
-      });
+      const response = await fetch(
+        "https://ewxkgalpibbumalylmma.supabase.co/functions/v1/openai-response",{
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            systemPrompt,
+            conversationHistory,
+            userInput
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -220,8 +226,8 @@ export default function MuminAIDropdown({
           <MaterialIcons name="arrow-back" size={35} color={colors.button_color} />
         </TouchableOpacity>
         <View style={styles.sparkleRow}>
-          <Image source={require('../../assets/images/mumin-avatar_bg_removed.png')} style={styles.avatar} />
-          <Text style={[styles.headerText, {color: colors.accentText}]}>{headerText}</Text>
+        <Image source={require('../../assets/images/Untitled design.png')} style={styles.avatar} />
+        <Text style={[styles.headerText, {color: colors.accentText}]}>{headerText}</Text>
         </View>
         <TouchableOpacity onPress={onShare} style={[styles.iconBtn, {marginRight: 2, marginTop: 5}]}>
           <Feather name="share-2" size={25} color={colors.button_color}/>
@@ -371,14 +377,15 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 20,
-    marginRight: 8,
+    marginLeft: 0,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 0,
     marginTop: 0,
+    marginLeft: 0,
   },
   prompt: {
     fontSize: 15,

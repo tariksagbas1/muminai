@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { updateFontSize, getFontSize } from '../utils/anonUserSupabase';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { getFontSize, updateFontSize } from '../utils/anonUserSupabase';
 
 const fontSizes = [
   { label: 'Küçük', size: 16 },
@@ -14,7 +14,7 @@ const fontSizes = [
 
 export default function FontSettingsScreen() {
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState(18);
+  const [selectedSize, setSelectedSize] = useState(20);
   const { colors } = useTheme();
 
   useEffect(() => {

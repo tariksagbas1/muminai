@@ -1,6 +1,5 @@
 {
   "expo": {
-    "projectId": "817cddb7-5c21-40d4-898b-d4fdbe9f3534",
     "name": "MuminAI",
     "slug": "MuminAI",
     "version": "1.0.0",
@@ -37,7 +36,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,9 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Keyboard, Image } from 'react-native';
+import Voice from '@react-native-voice/voice';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { androidMicPermission, getTone } from '../../utils/anonUserSupabase';
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGtnYWxwaWJidW1hbHlsbW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5ODY2MzUsImV4cCI6MjA2NTU2MjYzNX0.VVg1x3-m1bsuU2RpJgnGqUqACZ7FVdisdctjobGQ680"
 
 // User-specific conversation cache
 const userConversationCache: { [userId: string]: Array<{ from: 'user' | 'ai'; text: string }> } = {};
@@ -11,9 +13,7 @@ const userConversationCache: { [userId: string]: Array<{ from: 'user' | 'ai'; te
 // Function to get or create user cache
 const getUserCache = (userId: string) => {
   if (!userConversationCache[userId]) {
-    userConversationCache[userId] = [
-      { from: 'ai', text: 'Esselâmü aleyküm ve rahmetullâhi; ben Mümin, neyi arzu eyler, nasıl hizmet sunmamı dilersiniz?' }
-    ];
+    userConversationCache[userId] = [];
   }
   return userConversationCache[userId];
 };
@@ -49,6 +49,7 @@ export default function SorScreen() {
   const [currentAIResponse, setCurrentAIResponse] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
+  
   // Load cached messages when component mounts
   useEffect(() => {
     setMessages(getCachedMessages(userId));
@@ -90,36 +91,41 @@ export default function SorScreen() {
 
   const generateResponse = async (userInput: string) => {
     try {
-      const systemPrompt = `You are an Islamic Q&A assistant named Mümin.
+      let systemPrompt = `You are an Islamic Q&A assistant named Mümin.
       You are a wise knowledgable Muslim fully committed to and supporting to Islam.
       You are not to talk about anything that is Haram.
-      Always be respectful, concise and formal.
-      Quote the Kuran frequently when you answer.
-      Always answer in Old Turkish.
-      Do not use more than 400 tokens.
+      Always be respectful and formal.
+      Quote the Kuran when necessary in your answer.
+      Keep it short and concise.
+      Do not use more than 350 words.
+      This is a system prompt, do not use this information in your response.
       `;
-      
+      getTone().then(tone => {
+        if (tone === 'heavy') {
+          systemPrompt += `Always answer in Old Turkish.`;
+          userInput = "Ey Mümin, " + userInput;
+        }
+        if (tone === 'light') {
+          systemPrompt += `Always answer in Modern Turkish. Minimize arabic words.`;
+        }
+
+      });
       // Build conversation history from the last few messages
       const conversationHistory = messages.slice(-10).map(msg => ({
         role: msg.from === 'user' ? 'user' : 'assistant',
         content: msg.text
       }));
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://ewxkgalpibbumalylmma.supabase.co/functions/v1/openai-response', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
-          model: 'gpt-4.1',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...conversationHistory,
-            { role: 'user', content: 'Ey Mümin,' + userInput }
-          ],
-          temperature: 0.7,
-          max_tokens: 400
+          systemPrompt,
+          conversationHistory,
+          userInput: userInput,
         })
       });
 
@@ -142,6 +148,7 @@ export default function SorScreen() {
     
     const userMessage = { from: 'user' as const, text: textToSend };
     setMessages((prev) => [...prev, userMessage]);
+    addToUserCache(userId, userMessage);
     setInput('');
     Keyboard.dismiss();
     setLoading(true);
@@ -163,12 +170,28 @@ export default function SorScreen() {
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <View>
-          <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
-          <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Mümine sor.</Text>
+      {messages.filter(m => m.from === 'user').length === 0 ? (
+        <View style={{ alignItems: 'center', marginTop: 60 }}>
+          <View style={styles.avatarCircleBg}>
+            <Image
+              source={require('../../assets/images/Untitled design.png')}
+              style={[styles.bigAvatar, { shadowColor: colors.shadow }]}
+            />
+          </View>
+          <View style={{ alignItems: 'center', marginTop: 20 }}>
+            <Text style={[styles.title, { color: colors.primaryText }]}>Mümin AI</Text>
+            <Text style={[styles.subtitle, { color: colors.secondaryText, marginTop: 6 }]}>Mümine sor.</Text>
+            <Text style={{ color: colors.tertiaryText, marginTop: 10, fontSize: 16, maxWidth: 280, textAlign: 'center' }}>
+             Sen sorularını yaz, Mümin cevaplasın.
+            </Text>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={[styles.header, { backgroundColor: colors.background, justifyContent: 'center', marginTop: 60, flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 16}]}> 
+          <Text style={[styles.title, { color: colors.primaryText, alignSelf: 'flex-start' }]}>Mümin AI</Text>
+          <Text style={[styles.subtitle, { color: colors.secondaryText, marginTop: 0, alignSelf: 'flex-start' }]}>Mümine sor.</Text>
+        </View>
+      )}
       
       <ScrollView style={[styles.messages, { backgroundColor: colors.background }]} contentContainerStyle={{ padding: 16, marginTop: 0 }}>
         {messages.map((msg, idx) => (
@@ -241,6 +264,29 @@ export default function SorScreen() {
           disabled={loading}
         >
           <MaterialIcons name="send" size={18} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.micBtn, { backgroundColor: colors.primary, marginLeft: 6 }]}
+          onPress={async () => {
+            if (Platform.OS === 'android') {
+              const ok = await androidMicPermission();
+              if (!ok) {
+                console.log('Microphone permission rejected');
+                return;
+              }
+            }
+            else if (Platform.OS === 'ios') {
+              try {
+                await Voice.start('tr-TR');
+                console.log('Voice recognition started');
+              } catch (e) {
+                console.error('Voice start error', e);
+              }
+            }
+          }}
+          disabled={loading}
+        >
+          <MaterialIcons name="mic" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -319,8 +365,34 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
+  micBtn: {
+    borderRadius: 10,
+    padding: 10,
+  },
   sendBtnDisabled: {
     backgroundColor: 'rgb(72, 72, 72)',
     color: 'rgb(100, 100, 100)',
+  },
+  bigAvatar: {
+    width: 165,
+    height: 165,
+    borderRadius: 55,
+    borderWidth: 0,
+    marginBottom: -5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0, //0.18
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  avatarCircleBg: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderColor: 'rgb(255, 253, 249)',
+    borderWidth: 0,
+    backgroundColor: 'transparent', //rgb(242, 246, 249)
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 70,
   },
 });
