@@ -1,0 +1,40 @@
+name: Daily Refresh & Push Notifications
+
+on:
+  # Schedule: run at 12:00 UTC every day
+  schedule:
+    - cron: '0 12 * * *'
+  # Allow manual trigger from Actions UI
+  workflow_dispatch:
+
+jobs:
+  invoke-supabase-function:
+    runs-on: ubuntu-latest
+
+    # Inject secrets at the job level
+    env:
+      SUPABASE_FUNCTION_URL: ${{ secrets.SUPABASE_FUNCTION_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Debug env injection
+        run: |
+          echo ">>> SUPABASE_FUNCTION_URL => '$SUPABASE_FUNCTION_URL'"
+          if [ -z "$SUPABASE_FUNCTION_URL" ]; then
+            echo "ERROR: SUPABASE_FUNCTION_URL is empty!"
+            exit 1
+          fi
+          # Check length of service role key, but do not print full key
+          echo ">>> SUPABASE_SERVICE_ROLE_KEY length: ${#SUPABASE_SERVICE_ROLE_KEY}"
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "ERROR: SUPABASE_SERVICE_ROLE_KEY is empty!"
+            exit 1
+          fi
+      - name: Invoke Supabase Edge Function
+        run: |
+          echo "Invoking Supabase Edge Function at $SUPABASE_FUNCTION_URL ..."
+          # POST an empty JSON body; adjust if your function expects something different
+          curl -v -X POST "$SUPABASE_FUNCTION_URL" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
